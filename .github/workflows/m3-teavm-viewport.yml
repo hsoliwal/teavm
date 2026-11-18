@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: Apache-2.0
+name: M3 portable TeaVM viewport (Java21 + JS/Wasm GC)
+on:
+  pull_request:
+    paths:
+      - 'samples/m3-viewport/**'
+      - 'samples/settings.gradle.kts'
+      - '.github/workflows/m3-teavm-viewport.yml'
+  push:
+    branches:
+      - 'feature/m3-remote-panel-viewport-teavm-*'
+    paths:
+      - 'samples/m3-viewport/**'
+      - 'samples/settings.gradle.kts'
+      - '.github/workflows/m3-teavm-viewport.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  headless-jvm-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Exact pure-Java portable viewport proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/m3-viewport-proof
+          javac --release 21 -Xlint:all -Werror -d build/m3-viewport-proof \
+            samples/m3-viewport/src/main/java/org/teavm/samples/m3viewport/FrameWindow.java \
+            samples/m3-viewport/src/test/java/org/teavm/samples/m3viewport/FrameWindowProof.java
+          java -cp build/m3-viewport-proof org.teavm.samples.m3viewport.FrameWindowProof
+
+  browser-backends:
+    needs: headless-jvm-proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build compiler artifacts used by independent samples project
+        run: ./gradlew --no-daemon --console=plain publishToMavenLocal -x test
+      - name: Generate TeaVM JavaScript and Wasm GC sample
+        working-directory: samples
+        run: ./gradlew --no-daemon --console=plain :m3-viewport:generateJavaScript :m3-viewport:generateWasmGC
+      - name: Verify nonempty generated browser bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+          find samples/m3-viewport/build -type f \( -name '*.js' -o -name '*.wasm' \) -print
+          find samples/m3-viewport/build -type f -name '*.js' | grep -q .
+          find samples/m3-viewport/build -type f -name '*.wasm' | grep -q .
