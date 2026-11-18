@@ -121,3 +121,7 @@ Select best-of-best correct atoms and combine compatible implementations into an
 Prefer Apache-2.0 only for original contributions with sufficient rights. Keep all inherited licenses, GPL/EPL/Apache exceptions, attributions, notices and source lineage. Independently implementing an abstract algorithm can be lawful, but an LLM's code translation is not a license or copyright bypass; check applicable patents.
 
 Record exact audit date/commit and exhaustive root/ref/PR/source coverage in `hsoliwal/com.synexia/docs/M3-SCALE/invariants/SYNEXIA-HISTORY-REVIEW-LAST-CHECKED.tsv`. Label partial scans PARTIAL and never assert complete review without executed proof.
+
+## MOP SDK cross-repository agent read gate (2026-11-18)
+<!-- MOP-AGENT-2026-11-18-1 -->
+Before any source analysis, refactor, PR, merge, licensing decision, or history checkpoint, also read [AGENT.md](AGENT.md). It governs bidirectional atomization/patternization, documented contract-sealed atoms, additive best-of-best API supersets, complete available-history loss checks, dated last-verified proof, Apache-2.0 eligibility and upstream rights. Existing stronger project-specific and locked-canon constraints remain in force. Installation of this pointer does not establish that a source or historical audit has run.
