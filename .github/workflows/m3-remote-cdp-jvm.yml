@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0
+name: M3 remote browser Java21 CDP contract
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'samples/m3-viewport/**'
+      - '.github/workflows/m3-remote-cdp-jvm.yml'
+permissions:
+  contents: read
+jobs:
+  display-free-cdp-host:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Java21 strict compile (no SWT/Node/TeaVM host dependencies)
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC=samples/m3-viewport/src
+          ROOT=org/teavm/samples/m3viewport
+          OUT="$RUNNER_TEMP/m3-cdp-classes"
+          mkdir -p "$OUT"
+          javac --release 21 -Xlint:all -Werror -d "$OUT" \
+            "$SRC/main/java/$ROOT/FrameWindow.java" \
+            "$SRC/main/java/$ROOT/RemoteFrameInbox.java" \
+            "$SRC/main/java/$ROOT/CdpScreencastCommands.java" \
+            "$SRC/test/java/$ROOT/FrameWindowProof.java" \
+            "$SRC/test/java/$ROOT/RemoteFrameInboxProof.java" \
+            "$SRC/test/java/$ROOT/CdpFrameJson.java" \
+            "$SRC/test/java/$ROOT/CdpScreencastHost.java" \
+            "$SRC/test/java/$ROOT/CdpScreencastHostProof.java" \
+            "$SRC/test/java/$ROOT/RemoteCdpProofSuite.java"
+          java -ea -cp "$OUT" org.teavm.samples.m3viewport.FrameWindowProof
+          java -ea -cp "$OUT" org.teavm.samples.m3viewport.RemoteCdpProofSuite

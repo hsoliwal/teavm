@@ -29,3 +29,13 @@ tasks.register<JavaExec>("m3ViewportProof") {
     classpath = sourceSets.test.get().runtimeClasspath
     mainClass = "org.teavm.samples.m3viewport.FrameWindowProof"
 }
+
+
+/** JDK-only reference host: Java networking/ImageIO never enters TeaVM JS/Wasm. */
+tasks.register<JavaExec>("m3CdpHostProof") {
+    group = "verification"
+    description = "Run bounded CDP/TeaVM full-frame and input contract proofs on Java 21"
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass = "org.teavm.samples.m3viewport.RemoteCdpProofSuite"
+}

@@ -78,3 +78,82 @@ No third-party source is copied. TeaVM and this sample remain Apache-2.0.
 Upstream TeaVM `samples/hello` and `samples/kotlin` provide the Gradle/JSO
 build patterns. The canonical M3 compiler bridge in `hsoliwal/com.synexia` is
 already implemented by PRs #2953, #2965, #3809 and #3851; **do not duplicate it**.
+
+## Bounded CDP remote-browser transport (second slice)
+
+This sample now includes `RemoteFrameInbox` (portable JVM/TeaVM Java) and
+`CdpScreencastCommands` (validated command envelopes). These additions are **not** a
+new JavaScript VM, a full browser, a socket server, or an RFB protocol clone.
+They consume and publish compressed *full-image* browser frames. No unsupported
+pixel-damage optimization is claimed for CDP screenshots.
+
+The **JVM-only** reference adapter lives under `src/test/java`:
+`CdpFrameJson` parses bounded CDP event JSON, `CdpScreencastHost` is a
+`java.net.http.WebSocket.Listener`, and `CdpScreencastHostProof` uses a fake
+WebSocket and real JDK PNG encoding/headers. This adapter is deliberately
+excluded from TeaVM JavaScript/Wasm targets because `java.net.http`, `ImageIO`,
+network authorisation and native image decoding belong on the host JVM.
+Applications should port the reviewed adapter into an existing authenticated
+Synexia workbench host, rather than link test-only classes directly.
+
+### Protocol mapping
+
+* Chromium: `Page.startScreencast` with JPEG quality/max-size and a
+  `maxFramesInFlight=1` backpressure request; event
+  `Page.screencastFrame` carries compressed Base64 and **protocol**
+  `sessionId`, which must be echoed in `Page.screencastFrameAck` after bounded
+  intake, even if a stale/replaced frame is not displayed. The M3 **epoch** and
+  **revision** are unrelated to CDP's `sessionId`.
+* CDP `Input.dispatchMouseEvent` coordinates are **CSS viewport pixels**.
+  The host must establish the CSS viewport size independently from a trusted
+  browser session, and restart/reconfigure upon resize. A screenshot's pixel
+  dimensions must be decoded/validated separately from reported metadata.
+* Firefox WebDriver BiDi `browsingContext.captureScreenshot` is a one-shot
+  command rather than this Chromium screencast event. A Firefox host adapter
+  can feed its decoded PNG/JPEG into `RemoteFrameInbox` under its own monotonically
+  increasing revisions. Do not send Chromium-specific acknowledgements to BiDi.
+* RFB/VNC continues to use Nebula's existing framebuffer and damage rectangles,
+  not these full PNG/JPEG messages. TeaVM and SWT can share `FrameWindow` geometry
+  without duplicating RFB authentication or protocol parsing.
+
+### Safety and data ownership
+
+* **No implicit remote input**. Only a trusted application, after appropriate
+  authorization, may call `RemoteFrameInbox.setInputAuthorized(true)`. The inbox
+  denies stale/unpainted frames, letterbox margins and all input after reconnect
+  unless reauthorized. The JSO browser demo does not grant input authorization.
+* Host-supplied `WebSocket` must already target an authenticated, policy-approved
+  Chromium debugging connection (prefer an isolated loopback session / secured
+  tunnel). No debugging endpoint is discovered, browser launched, or socket
+  opened by these classes. CDP debugging exposes powerful browser privileges;
+  never forward its raw WebSocket endpoint to a public TeaVM web page.
+* One latest compressed frame is retained in the inbox, capped at 8 MiB.
+  JVM-side WebSocket messages are capped at 12 million characters, with a
+  two-entry worker queue and strict JSON nesting/member limits. JPEG/PNG header
+  dimensions and a 16M-pixel limit are verified before admission. An SWT/browser
+  renderer must **also** validate the decoded image and release native resources
+  on its own UI thread. The parser and decoder never run on SWT's event thread.
+* The UI calls `take(viewWidth, viewHeight)` and then `displayed(delivery)` only
+  after successfully painting that precise frame. `pointer(epoch, revision, x, y)`
+  refuses newer/unshown revisions even if an older image remains visible.
+  Network event ACK is deliberately separate from native paint completion.
+* CDP full snapshots always trigger full-image redraw. For later dirty-tile
+  streaming, compare bounded decoded tiles on the CPU and deliver exact changed
+  regions through the existing Nebula/SWT `ViewportDamage` paths; never infer
+  damage from compressed byte differences.
+
+### Reproduce Java 21 validation
+
+Run the original JVM proof and the new portable/CDP reference-host proofs:
+
+```sh
+cd samples
+./gradlew :m3-viewport:m3ViewportProof :m3-viewport:m3CdpHostProof
+```
+
+The `m3CdpHostProof` task runs deterministic input, queue, session,
+malformed JSON, real ImageIO PNG, command serialization, and randomized mapping
+checks. An isolated JDK 21 `javac --release 21 -Xlint:all -Werror` execution
+of the same classes is part of the source packet. Browser JS/Wasm codegen,
+real CDP session interoperability and GTK/Win32/Cocoa SWT painting remain
+**NOT_RUN** until their own integration and acceptance tests are executed.
