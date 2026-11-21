@@ -54,6 +54,7 @@ rootProject.name = "teavmSamples"
 include("stdout-helper")
 include("hello")
 include("m3-viewport")
+include("webmcp")
 include("async")
 include("benchmark")
 include("pi")
