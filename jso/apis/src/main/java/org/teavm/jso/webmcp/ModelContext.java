@@ -25,24 +25,38 @@ public interface ModelContext extends EventTarget {
 
     /** Mutable JavaScript dictionary owned by the registering document. */
     interface Definition extends JSObject {
-        @JSProperty void setName(String name);
-        @JSProperty void setTitle(String title);
-        @JSProperty void setDescription(String description);
-        @JSProperty void setInputSchema(JSObject schema);
-        @JSProperty void setOutputSchema(JSObject schema);
-        @JSProperty void setAnnotations(JSObject annotations);
-        @JSProperty void setExecute(Executor callback);
+        @JSProperty
+        void setName(String name);
+        @JSProperty
+        void setTitle(String title);
+        @JSProperty
+        void setDescription(String description);
+        @JSProperty
+        void setInputSchema(JSObject schema);
+        @JSProperty
+        void setOutputSchema(JSObject schema);
+        @JSProperty
+        void setAnnotations(JSObject annotations);
+        @JSProperty
+        void setExecute(Executor callback);
     }
 
     /** Discovered opaque tool. Supports the draft Tool interface and polyfill dictionaries. */
     interface Tool extends JSObject {
-        @JSProperty String getName();
-        @JSProperty String getTitle();
-        @JSProperty String getDescription();
-        @JSProperty String getOrigin();
-        @JSProperty JSObject getInputSchema();
-        @JSProperty JSObject getOutputSchema();
-        @JSProperty JSObject getAnnotations();
+        @JSProperty
+        String getName();
+        @JSProperty
+        String getTitle();
+        @JSProperty
+        String getDescription();
+        @JSProperty
+        String getOrigin();
+        @JSProperty
+        JSObject getInputSchema();
+        @JSProperty
+        JSObject getOutputSchema();
+        @JSProperty
+        JSObject getAnnotations();
     }
 
     /** A callback may return a JSON value or a JSPromise of a JSON value. */
@@ -52,19 +66,24 @@ public interface ModelContext extends EventTarget {
     }
 
     interface CallbackOptions extends JSObject {
-        @JSProperty AbortSignal getSignal();
+        @JSProperty
+        AbortSignal getSignal();
     }
 
     interface RegistrationOptions extends JSObject {
-        @JSProperty void setSignal(AbortSignal signal);
-        @JSProperty void setExposedTo(JSArrayReader<String> origins);
+        @JSProperty
+        void setSignal(AbortSignal signal);
+        @JSProperty
+        void setExposedTo(JSArrayReader<String> origins);
     }
 
     interface DiscoveryOptions extends JSObject {
-        @JSProperty void setFromOrigins(JSArrayReader<String> origins);
+        @JSProperty
+        void setFromOrigins(JSArrayReader<String> origins);
     }
 
     interface ExecutionOptions extends JSObject {
-        @JSProperty void setSignal(AbortSignal signal);
+        @JSProperty
+        void setSignal(AbortSignal signal);
     }
 }
