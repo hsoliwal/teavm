@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: Apache-2.0
+name: WebMCP TeaVM JSO browser candidate
+on:
+  pull_request:
+    paths:
+      - 'jso/apis/src/main/java/org/teavm/jso/webmcp/**'
+      - 'samples/webmcp/**'
+      - 'samples/settings.gradle.kts'
+      - '.github/workflows/webmcp-teavm.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  java11-overlay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Real TeaVM Java/JSO compilation and Checkstyle
+        run: ./gradlew --no-daemon --console=plain :jso:apis:compileJava :jso:apis:checkstyleMain
+
+  browser-bundle:
+    needs: java11-overlay
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Publish fork compiler dependencies for independent samples build
+        run: ./gradlew --no-daemon --console=plain publishToMavenLocal -x test
+      - name: Compile Java page fixture to JavaScript
+        working-directory: samples
+        run: ./gradlew --no-daemon --console=plain :webmcp:generateJavaScript :webmcp:war
+      - name: Verify nonempty generated JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          find samples/webmcp/build -type f -name '*.js' -print
+          find samples/webmcp/build -type f -name '*.js' | grep -q .
