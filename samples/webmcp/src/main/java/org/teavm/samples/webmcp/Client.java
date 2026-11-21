@@ -22,7 +22,8 @@ public final class Client {
     public static void main(String[] args) {
         ModelContext context = WebMcp.currentOrNull();
         if (context == null) {
-            status("WebMCP unavailable; install the pinned polyfill before this script, or use native support.");
+            status("WebMCP unavailable; install the pinned polyfill before this script, "
+                    + "or use native support.");
             return;
         }
         lifetime = new AbortController();
