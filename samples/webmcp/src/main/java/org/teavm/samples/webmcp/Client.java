@@ -48,7 +48,7 @@ public final class Client {
                     }
                     ModelContext.ExecutionOptions execution = JSObjects.create();
                     context.executeTool(tool, JSObjects.create(), execution).then(json -> {
-                        status("m3.page_title result: " + json);
+                        status("m3.page_title result: " + json.stringValue());
                         return JSUndefined.instance();
                     }, failure -> {
                         status("WebMCP tool invocation failed");
