@@ -28,6 +28,8 @@ test('TeaVM-generated JavaScript registers, discovers, and executes page title t
     let server;
     try {
       await unzip('unzip', ['-q', join(projectRoot, 'build', 'libs', wars[0]), '-d', root]);
+      const generated = await readFile(join(root, 'js', 'webmcp.js'));
+      assert.ok(generated.length > 100, 'generated TeaVM webmcp.js missing or empty in WAR');
       await copyFile(polyfill, join(root, 'webmcp-polyfill.js'));
       const htmlPath = join(root, 'index.html');
       let html = await readFile(htmlPath, 'utf8');
@@ -63,12 +65,25 @@ test('TeaVM-generated JavaScript registers, discovers, and executes page title t
       browser = await chromium.launch({ headless: true, args: ['--disable-features=WebMCP'] });
       const page = await browser.newPage();
       const errors = [];
+      const httpFailures = [];
       page.on('pageerror', error => errors.push(error.message));
+      page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+      page.on('response', response => { if (response.status() >= 400) httpFailures.push(`${response.status()} ${response.url()}`); });
       await page.goto(origin, { waitUntil: 'load' });
       assert.equal(await page.evaluate(() => globalThis.isSecureContext), true);
-      await page.waitForFunction(() =>
-        document.getElementById('status')?.textContent?.startsWith('m3.page_title result:'),
-      null, { timeout: 12_000 });
+      try {
+        await page.waitForFunction(() =>
+          document.getElementById('status')?.textContent?.startsWith('m3.page_title result:'),
+        null, { timeout: 12_000 });
+      } catch (error) {
+        const state = await page.evaluate(() => ({
+          status: document.getElementById('status')?.textContent,
+          main: typeof globalThis.main, modelContext: !!document.modelContext,
+          secure: globalThis.isSecureContext,
+          scripts: [...document.scripts].map(script => script.src)
+        }));
+        throw new Error(`TeaVM browser runtime did not produce a tool result: ${JSON.stringify({ state, errors, httpFailures })}`, { cause: error });
+      }
       const status = await page.locator('#status').innerText();
       const prefix = 'm3.page_title result: ';
       assert.ok(status.startsWith(prefix), status);
