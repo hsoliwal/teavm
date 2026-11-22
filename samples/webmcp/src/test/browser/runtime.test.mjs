@@ -66,7 +66,7 @@ test('TeaVM-generated JavaScript registers, discovers, and executes page title t
       const page = await browser.newPage();
       const errors = [];
       const httpFailures = [];
-      page.on('pageerror', error => errors.push(error.message));
+      page.on('pageerror', error => errors.push(error.stack || error.message));
       page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
       page.on('response', response => { if (response.status() >= 400) httpFailures.push(`${response.status()} ${response.url()}`); });
       await page.goto(origin, { waitUntil: 'load' });
@@ -80,6 +80,7 @@ test('TeaVM-generated JavaScript registers, discovers, and executes page title t
           status: document.getElementById('status')?.textContent,
           main: typeof globalThis.main, modelContext: !!document.modelContext,
           secure: globalThis.isSecureContext,
+          onload: document.body.getAttribute('onload'),
           scripts: [...document.scripts].map(script => script.src)
         }));
         throw new Error(`TeaVM browser runtime did not produce a tool result: ${JSON.stringify({ state, errors, httpFailures })}`, { cause: error });
