@@ -157,3 +157,28 @@ checks. An isolated JDK 21 `javac --release 21 -Xlint:all -Werror` execution
 of the same classes is part of the source packet. Browser JS/Wasm codegen,
 real CDP session interoperability and GTK/Win32/Cocoa SWT painting remain
 **NOT_RUN** until their own integration and acceptance tests are executed.
+
+## Live local Chromium screencast proof (optional, explicit)
+
+The Java 21 JVM-only reference listener now sends `Page.enable` before
+`Page.startScreencast` on its serialized host-owned WebSocket. This is
+required by some fresh headless Chromium sessions; the earlier direct
+start-only path connected successfully but produced no frame in the
+reproduced local test. Image header inspection uses a
+`MemoryCacheImageInputStream` and never opts into ImageIO disk caching.
+
+The opt-in `LiveCdpScreencastProof` accepts **only a loopback page-level**
+`ws://127.0.0.1:PORT/devtools/page/...` URL supplied by the operator.
+Launch an isolated, locally trusted Chromium profile with a loopback-only
+debugging endpoint, then run it with the exact selected Java 21 sources:
+`org.teavm.samples.m3viewport.LiveCdpScreencastProof <page-websocket-url>`.
+It neither launches Chromium nor discovers a debugging URL, and does not
+send mouse, keyboard, clipboard, credentials or JavaScript to the page.
+
+Verified on an isolated local Chromium (November 22, 2026): a previously
+failing start-only capture emitted one JPEG after ordered `Page.enable`,
+decoded to 700 x 361 pixels. This is CDP/Java frame acceptance only:
+no browser JavaScript/Wasm output, native SWT GC paint, OS compositor scanout,
+or Firefox BiDi acceptance is claimed. Production hosts must not expose
+CDP remote debugging to untrusted networks; explicit trusted local or
+tunnel-protected transport and session authorization remain mandatory.

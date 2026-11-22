@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 
 /**
  * JVM-side Chromium CDP WebSocket listener for full-image screencast events.
@@ -74,6 +74,10 @@ public final class CdpScreencastHost implements WebSocket.Listener, AutoCloseabl
 
     /** Explicit start: opening a debugger connection alone never starts a capture. */
     public void start(int maxWidth, int maxHeight, int jpegQuality) {
+        // A real headless Chromium session may not emit screencast frames until
+        // the Page domain is explicitly enabled. Keep both commands ordered on
+        // the same WebSocket; the constructor itself does not start capture.
+        send(CdpScreencastCommands.enablePage(nextCommandId()));
         send(CdpScreencastCommands.start(nextCommandId(), maxWidth, maxHeight, jpegQuality));
     }
 
@@ -143,7 +147,8 @@ public final class CdpScreencastHost implements WebSocket.Listener, AutoCloseabl
     }
 
     private static int[] imageSize(byte[] bytes) throws IOException {
-        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
+        try (MemoryCacheImageInputStream input = new MemoryCacheImageInputStream(
+                new ByteArrayInputStream(bytes))) {
             if (input == null) throw new IOException("no ImageIO input");
             Iterator<ImageReader> decoders = ImageIO.getImageReaders(input);
             if (!decoders.hasNext()) throw new IOException("unsupported screenshot image");

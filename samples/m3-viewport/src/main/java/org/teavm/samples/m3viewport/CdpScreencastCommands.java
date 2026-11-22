@@ -10,6 +10,13 @@ package org.teavm.samples.m3viewport;
 public final class CdpScreencastCommands {
     private CdpScreencastCommands() { }
 
+    /** Enable the CDP Page domain before starting a screencast. The caller's
+     * ordered WebSocket writer must send this before Page.startScreencast. */
+    public static String enablePage(long id) {
+        if (id < 1) throw new IllegalArgumentException("invalid CDP command ID");
+        return "{\"id\":" + id + ",\"method\":\"Page.enable\"}";
+    }
+
     public static String start(long id, int width, int height, int quality) {
         if (id < 1 || width < 1 || height < 1 || width > RemoteFrameInbox.MAX_AXIS
                 || height > RemoteFrameInbox.MAX_AXIS || quality < 0 || quality > 100) {

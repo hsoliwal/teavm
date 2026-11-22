@@ -35,6 +35,7 @@ jobs:
             "$SRC/test/java/$ROOT/CdpFrameJson.java" \
             "$SRC/test/java/$ROOT/CdpScreencastHost.java" \
             "$SRC/test/java/$ROOT/CdpScreencastHostProof.java" \
+            "$SRC/test/java/$ROOT/LiveCdpScreencastProof.java" \
             "$SRC/test/java/$ROOT/RemoteCdpProofSuite.java"
           java -ea -cp "$OUT" org.teavm.samples.m3viewport.FrameWindowProof
           java -ea -cp "$OUT" org.teavm.samples.m3viewport.RemoteCdpProofSuite
