@@ -27,11 +27,18 @@ public final class CdpFrameJson {
 
     private CdpFrameJson() { }
 
+    /** Reusable strict, bounded JVM-only protocol JSON object parser. CDP and
+     * WebDriver BiDi each own their protocol-specific admission independently. */
+    public static Map<?, ?> object(String json) {
+        if (json == null || json.length() > MAX_TEXT) {
+            throw new IllegalArgumentException("oversized browser protocol message");
+        }
+        return map(new Parser(json).parse(), "root");
+    }
+
     /** Non-frame messages return null (e.g. command responses or network events). */
     public static Event frame(String json) {
-        if (json == null || json.length() > MAX_TEXT) throw new IllegalArgumentException("oversized CDP message");
-        Object parsed = new Parser(json).parse();
-        Map<?, ?> root = map(parsed, "root");
+        Map<?, ?> root = object(json);
         if (!"Page.screencastFrame".equals(root.get("method"))) return null;
         Map<?, ?> params = map(root.get("params"), "params");
         Object num = params.get("sessionId");
