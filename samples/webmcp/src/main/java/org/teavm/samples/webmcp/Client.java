@@ -38,7 +38,30 @@ public final class Client {
         ModelContext.RegistrationOptions options = JSObjects.create();
         options.setSignal(lifetime.getSignal());
         context.registerTool(definition, options).then(value -> {
-            status("m3.page_title registered in this document");
+            ModelContext.DiscoveryOptions discovery = JSObjects.create();
+            context.getTools(discovery).then(tools -> {
+                for (int i = 0; i < tools.getLength(); i++) {
+                    ModelContext.Tool tool = tools.get(i);
+                    if (!"m3.page_title".equals(tool.getName())
+                            || WebMcp.ownerWindow(tool) != Window.current()) {
+                        continue;
+                    }
+                    ModelContext.ExecutionOptions execution = JSObjects.create();
+                    context.executeTool(tool, JSObjects.create(), execution).then(json -> {
+                        status("m3.page_title result: " + json);
+                        return JSUndefined.instance();
+                    }, failure -> {
+                        status("WebMCP tool invocation failed");
+                        return JSUndefined.instance();
+                    });
+                    return JSUndefined.instance();
+                }
+                status("m3.page_title was not discovered in this document");
+                return JSUndefined.instance();
+            }, failure -> {
+                status("WebMCP tool discovery failed");
+                return JSUndefined.instance();
+            });
             return JSUndefined.instance();
         }, error -> {
             status("WebMCP registration failed");
