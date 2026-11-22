@@ -22,6 +22,7 @@ import org.teavm.jso.abort.AbortSignal;
 import org.teavm.jso.browser.Window;
 import org.teavm.jso.core.JSArrayReader;
 import org.teavm.jso.core.JSPromise;
+import org.teavm.jso.core.JSString;
 import org.teavm.jso.core.JSUndefined;
 import org.teavm.jso.dom.events.Event;
 import org.teavm.jso.dom.events.EventListener;
@@ -39,7 +40,7 @@ public interface ModelContext extends EventTarget {
     JSPromise<JSArrayReader<Tool>> getTools(DiscoveryOptions options);
 
     /** The result is a JSON-serialized string, not a JavaScript object. */
-    JSPromise<String> executeTool(Tool tool, JSObject inputObject, ExecutionOptions options);
+    JSPromise<JSString> executeTool(Tool tool, JSObject inputObject, ExecutionOptions options);
 
     /** Attach without overriding the browser's own event dispatch semantics. */
     default Registration onToolChange(EventListener<Event> listener) {
