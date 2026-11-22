@@ -43,3 +43,25 @@ for a **real** Gradle JSO/API + generated JavaScript test. Treat the result
 as pending until the workflow finishes. The sample does not connect a live
 browser agent, infer permissions, enable ChromeLLM-in-browser, or implement
 declarative WebMCP form tools.
+
+## Compiled-Java browser qualification
+
+After `./gradlew :webmcp:generateJavaScript :webmcp:war` in `samples/`,
+the test `samples/webmcp/src/test/browser/runtime.test.mjs` unpacks the
+actual generated WAR, injects the exact `@w3c/webmcp-polyfill@0.1.1`
+ahead of the generated JavaScript (test fixture only), and serves it from
+a secure localhost context in Playwright Chromium with native WebMCP disabled.
+It asserts that **compiled Java** performs registration, discovery, ownership
+verification, and execution, then publishes the expected JSON title response.
+The temporary WAR extraction and local HTTP server are removed after testing.
+
+The test requires Node 24, Playwright 1.55 and Chromium installed in the
+runner. It does not imply native Chrome WebMCP, WPT conformance, external
+browser-agent communication, cross-origin capabilities or production tool
+authorization. Run it with:
+
+```sh
+npm install --no-save --ignore-scripts @w3c/webmcp-polyfill@0.1.1 playwright@1.55.0
+npx playwright install --with-deps chromium
+node --test samples/webmcp/src/test/browser/runtime.test.mjs
+```
