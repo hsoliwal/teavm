@@ -65,3 +65,27 @@ npm install --no-save --ignore-scripts @w3c/webmcp-polyfill@0.1.1 playwright@1.5
 npx playwright install --with-deps chromium
 node --test samples/webmcp/src/test/browser/runtime.test.mjs
 ```
+
+
+## Verified compiled Java-to-WebMCP execution (2026-11-22)
+
+The initial compiled-JavaScript browser check failed because a
+`JSPromise<String>` value returned by `executeTool()` was a **JavaScript
+primitive**, not a Java `String`. Generated Java string concatenation then
+failed in `StringBuilder` with `Cannot read properties of undefined
+(reading 'length')`. Changing the HTML `main([])` call to `main()` alone
+did not fix it. The typed JSO API now uses `JSPromise<JSString>`, and
+the Java sample calls `json.stringValue()` explicitly.
+
+[GitHub Actions run 44995190419](https://github.com/hsoliwal/ChromeAIAgent/actions/runs/44995190419)
+passed actual TeaVM JSO compilation and Checkstyle, published fork artifacts,
+generated the JavaScript/WAR, and executed the Java-generated sample in real
+Chromium with official `@w3c/webmcp-polyfill@0.1.1`. Its end-to-end browser
+test reported **1 pass, 0 failures** and observed the expected
+`m3.page_title` serialized JSON result.
+
+This is not a native WebMCP conformance certificate: native WebMCP was
+disabled in the test browser. It also does not authorize cloud-agent
+transport, backend MCP, unrestricted cross-origin tools or automatic
+consequential actions. Keep this PR in draft until the broader source-history
+and native-compatibility review is complete.
