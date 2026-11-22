@@ -41,7 +41,13 @@ public final class CdpScreencastHostProof {
                 arrived::countDown, failure::set)) {
             host.onOpen(fake.socket);
             host.start(160, 80, 70);
+            awaitContains(fake.messages, "Page.enable");
             awaitContains(fake.messages, "Page.startScreencast");
+            synchronized (fake.messages) {
+                yes(fake.messages.indexOf(CdpScreencastCommands.enablePage(1))
+                        < fake.messages.indexOf(CdpScreencastCommands.start(2, 160, 80, 70)));
+            }
+            invalid(() -> CdpScreencastCommands.enablePage(0));
             byte[] image = png(160, 80);
             String encoded = Base64.getEncoder().encodeToString(image);
             String json = "{\"params\":{\"metadata\":{\"deviceWidth\":160.0},\"data\":\"" + encoded
