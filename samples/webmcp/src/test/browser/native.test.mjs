@@ -36,6 +36,11 @@ test('TeaVM-generated JavaScript registers, discovers, and executes under native
       server = createServer(async (req, res) => {
         try {
           const url = new URL(req.url, 'http://127.0.0.1');
+          // Headed Chromium requests a favicon; absence is not a WebMCP failure.
+          if (url.pathname === '/favicon.ico') {
+            res.writeHead(204).end();
+            return;
+          }
           const pathname = decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname);
           const file = resolve(root, pathname.replace(/^\/+/, ''));
           if (!file.startsWith(root + sep)) {
@@ -69,6 +74,9 @@ test('TeaVM-generated JavaScript registers, discovers, and executes under native
       const errors = [];
       const httpFailures = [];
       page.on('pageerror', error => errors.push(error.stack || error.message));
+      page.on('response', response => {
+        if (response.status() >= 400) errors.push(`HTTP ${response.status()} ${response.url()}`);
+      });
       page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
       page.on('response', response => { if (response.status() >= 400) httpFailures.push(`${response.status()} ${response.url()}`); });
       await page.goto(origin, { waitUntil: 'load' });
