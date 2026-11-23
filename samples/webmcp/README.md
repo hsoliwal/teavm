@@ -119,3 +119,32 @@ The WebMCP draft and Chrome feature flags remain experimental. Log the exact
 Chromium/Playwright versions and real CI result before claiming native support.
 Keep this PR in draft until the independent native gate has passed and the
 repository's historical superset audit and rights/permission reviews are done.
+
+
+## Verified native Chromium proof (2026-11-23)
+
+The draft's added native test and WAR were executed in a **real headed Chromium
+156.0.8078.4**, with Node 24, Playwright **1.64.0**, explicit
+`--enable-features=WebMCP,WebMCPTesting` and native WebMCP available **before**
+any polyfill installation. Exact run:
+[ChromeAIAgent Actions #45096035244](https://github.com/hsoliwal/ChromeAIAgent/actions/runs/45096035244).
+
+Result: **PASS**, 1/1 compiled-Java native WebMCP test, 0 failures.
+The independent official `@w3c/webmcp-polyfill@0.1.1` control also passed
+1/1. Real JSO Java/Checkstyle, fork artifact publishing, JavaScript codegen
+and WAR packaging all completed successfully. The native test checked
+registration, discovery and execution; confirmed that subsequent polyfill
+installation preserved the native context; and exercised the independent
+Playwright `page.webmcp.tools()` / `page.webmcp.callTool()` path.
+
+An earlier native run #45095461678 failed only the final browser-console
+assertion due to an unserved resource (consistent with headed Chromium's
+favicon request); the fixture was changed to return HTTP 204 for exactly
+`/favicon.ico` while rejecting/logging all other HTTP errors. The corrected
+run passed without relaxing functional assertions.
+
+**Scope:** this is a pinned experimental native browser test, **not** proof
+that a cloud agent or production Chrome assistant has access. The native
+cross-origin Permissions Policy matrix, cancellation/navigation WPT, release
+availability across other browsers and complete historical source-loss audit
+remain unverified. The TeaVM PR stays draft; ChromeLLM remains browser-free.
