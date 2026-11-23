@@ -89,3 +89,33 @@ disabled in the test browser. It also does not authorize cloud-agent
 transport, backend MCP, unrestricted cross-origin tools or automatic
 consequential actions. Keep this PR in draft until the broader source-history
 and native-compatibility review is complete.
+
+## Native Chromium proof candidate (2026-11-23)
+
+`src/test/browser/native.test.mjs` is a separate, **native-only** qualification
+of the same compiled TeaVM WAR. It launches headed Chromium under Xvfb with
+`--enable-features=WebMCP,WebMCPTesting`, checks that native
+`document.modelContext` exists **before any polyfill is loaded**, then verifies
+Java registration, discovery, opaque owner identity and JSON-result execution.
+It checks that importing the official `@w3c/webmcp-polyfill@0.1.1` afterward
+does not replace the native context. Finally it uses Playwright 1.64's
+`page.webmcp.tools()` and `page.webmcp.callTool()` as an independent
+browser-agent-facing harness.
+
+This test **fails** if the native API, browser-agent-facing discovery, or
+compiled Java behavior is missing. It does not silently switch to a polyfill or
+assume that browser-native capability is available to every Chrome user.
+It is a browser-engine/tool-test qualification, not a demonstration of access
+by a particular external cloud agent, production consent UX or an MCP transport.
+
+```sh
+npm install --no-save --ignore-scripts --no-audit --no-fund \
+    @w3c/webmcp-polyfill@0.1.1 playwright@1.64.0
+npx playwright install --with-deps chromium
+xvfb-run -a node --test samples/webmcp/src/test/browser/native.test.mjs
+```
+
+The WebMCP draft and Chrome feature flags remain experimental. Log the exact
+Chromium/Playwright versions and real CI result before claiming native support.
+Keep this PR in draft until the independent native gate has passed and the
+repository's historical superset audit and rights/permission reviews are done.
