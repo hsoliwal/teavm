@@ -116,3 +116,31 @@ sensitive tabs for this probe.
 
 MDN: https://developer.mozilla.org/en-US/docs/Web/WebDriver/How_to/Create_BiDi_connection
 WebDriver BiDi `session.new`: https://developer.mozilla.org/en-US/docs/Web/WebDriver/Reference/BiDi/Modules/session/new
+
+## Loopback WebSocket wire acceptance (Java 21 test only)
+
+`BidiWebSocketWireProof` exercises the existing `FirefoxBiDiLiveProof`
+using Java's actual `HttpClient.newWebSocketBuilder()` on a temporary
+**127.0.0.1-only** test socket. The minimal server implements only a bounded
+RFC 6455 HTTP upgrade and masked request / fragmented response text framing.
+It does **not** simulate browser layout, launch Firefox, scrape a site,
+connect externally or provide any real Firefox interoperability evidence.
+
+The six scenarios are context-list mode, explicit context screenshot, rejecting
+non-Firefox sessions, rejecting an unknown context, ignoring a stale screenshot
+reply ID before a valid one, and failing closed on malformed screenshot Base64.
+The Java test creates a tiny in-memory PNG; screenshot decoding and input-denial
+checks remain inside the actual existing host. The server binds an ephemeral
+loopback-only port, closes sockets on completion, and never forwards user input.
+No new protocol/runtime API, production transport, credential or SWT behavior
+is introduced.
+
+Qualified locally against the exact TeaVM master Java sources as of
+2026-11-23: `javac --release 21 -Xlint:all -Werror` passed; six test
+scenarios passed, followed by 12 repeated runs. The pre-existing Java21
+viewport/CDP/BiDi tests and source-seal verifier also passed unchanged. The
+GitHub CI job now compiles and runs this same wire test in addition to the
+previous proof. **Live Firefox**, TeaVM JavaScript/Wasm compilation, real SWT
+native painting, whole-repository Gradle and Maven/OpenRewrite acceptance are
+still **NOT_RUN** for this candidate. Leave the PR in draft/HOLD until those
+independent promotion gates succeed.
