@@ -36,6 +36,11 @@ jobs:
             "$SRC/test/java/$ROOT/CdpScreencastHost.java" \
             "$SRC/test/java/$ROOT/CdpScreencastHostProof.java" \
             "$SRC/test/java/$ROOT/LiveCdpScreencastProof.java" \
+            "$SRC/main/java/$ROOT/BidiScreenshotCommands.java" \
+            "$SRC/test/java/$ROOT/BidiScreenshotHost.java" \
+            "$SRC/test/java/$ROOT/BidiScreenshotHostProof.java" \
+            "$SRC/test/java/$ROOT/FirefoxBiDiLiveProof.java" \
+            "$SRC/test/java/$ROOT/FirefoxBiDiLiveProofTest.java" \
             "$SRC/test/java/$ROOT/RemoteCdpProofSuite.java"
           java -ea -cp "$OUT" org.teavm.samples.m3viewport.FrameWindowProof
           java -ea -cp "$OUT" org.teavm.samples.m3viewport.RemoteCdpProofSuite

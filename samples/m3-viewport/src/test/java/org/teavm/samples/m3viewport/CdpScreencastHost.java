@@ -146,7 +146,7 @@ public final class CdpScreencastHost implements WebSocket.Listener, AutoCloseabl
         }
     }
 
-    private static int[] imageSize(byte[] bytes) throws IOException {
+    static int[] imageSize(byte[] bytes) throws IOException {
         try (MemoryCacheImageInputStream input = new MemoryCacheImageInputStream(
                 new ByteArrayInputStream(bytes))) {
             if (input == null) throw new IOException("no ImageIO input");

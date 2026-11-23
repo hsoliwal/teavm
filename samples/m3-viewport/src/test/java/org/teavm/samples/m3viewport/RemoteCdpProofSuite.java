@@ -8,5 +8,7 @@ public final class RemoteCdpProofSuite {
     public static void main(String[] args) throws Exception {
         RemoteFrameInboxProof.main(args);
         CdpScreencastHostProof.main(args);
+        BidiScreenshotHostProof.main(args);
+        FirefoxBiDiLiveProofTest.main(args);
     }
 }
