@@ -68,3 +68,51 @@ is a push streaming transport: it is per-request polling.
 
 Specification: https://www.w3.org/TR/webdriver-bidi/#command-browsingContext-captureScreenshot
 MDN: https://developer.mozilla.org/en-US/docs/Web/WebDriver/Reference/BiDi/Modules/browsingContext/captureScreenshot
+
+## JVM-only live Firefox BiDi acceptance probe
+
+The opt-in `FirefoxBiDiLiveProof` now implements the missing **direct Firefox
+BiDi session handshake** without starting a browser or selecting a tab
+implicitly. Run Firefox yourself in a separate, isolated browser profile with
+remote debugging explicitly bound to loopback. On Firefox's direct endpoint:
+
+```text
+java -cp <compiled-Java21-proof-classes> \
+  org.teavm.samples.m3viewport.FirefoxBiDiLiveProof \
+  ws://127.0.0.1:9222/session list
+```
+
+After reviewing the emitted browser-minted `context=` identifier, explicitly
+select one for a one-shot PNG capture, supplying the trusted independently
+established CSS viewport size:
+
+```text
+java -cp <compiled-Java21-proof-classes> \
+  org.teavm.samples.m3viewport.FirefoxBiDiLiveProof \
+  ws://127.0.0.1:9222/session capture CONTEXT_ID CSS_WIDTH CSS_HEIGHT
+```
+
+`list` performs `session.new`, validates Firefox browser capabilities and
+performs `browsingContext.getTree`. It prints context IDs **without** retrieving
+URLs, sending navigation commands or capturing pixels. The separate `capture`
+invocation requires the selected context to exist in the returned tree before
+issuing `browsingContext.captureScreenshot` via the existing Java host. The
+accepted PNG is independently fully decoded using a memory-only ImageIO input,
+with bounds checked before allocation. No `displayed()` or remote input
+permission is ever granted by this probe. No transport credentials or raw
+debugger addresses are embedded in TeaVM JavaScript/Wasm.
+
+`FirefoxBiDiLiveProofTest` exercises the exact handshake, nested context tree,
+explicit context authorization, PNG capture and foreign-socket refusal using a
+mock Java WebSocket. The original `BidiScreenshotHost` also rejects events,
+closes and errors arriving from a different WebSocket; a second onOpen cannot
+replace its session. The test is **not** live Firefox acceptance.
+
+Only `ws://127.0.0.1:PORT/session` with no URL credentials, query or fragment
+is accepted in the opt-in acceptance probe. Loopback does not authenticate a
+local process; isolate the Firefox profile and never expose debugging over
+untrusted networks. Do not use an existing personal browser profile with
+sensitive tabs for this probe.
+
+MDN: https://developer.mozilla.org/en-US/docs/Web/WebDriver/How_to/Create_BiDi_connection
+WebDriver BiDi `session.new`: https://developer.mozilla.org/en-US/docs/Web/WebDriver/Reference/BiDi/Modules/session/new

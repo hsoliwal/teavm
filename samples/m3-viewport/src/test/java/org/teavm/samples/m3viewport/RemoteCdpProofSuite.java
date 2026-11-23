@@ -9,5 +9,6 @@ public final class RemoteCdpProofSuite {
         RemoteFrameInboxProof.main(args);
         CdpScreencastHostProof.main(args);
         BidiScreenshotHostProof.main(args);
+        FirefoxBiDiLiveProofTest.main(args);
     }
 }

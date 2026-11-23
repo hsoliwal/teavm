@@ -71,9 +71,11 @@ public final class BidiScreenshotHost implements WebSocket.Listener, AutoCloseab
     }
 
     @Override
-    public void onOpen(WebSocket webSocket) {
+    public synchronized void onOpen(WebSocket webSocket) {
         Objects.requireNonNull(webSocket, "webSocket");
-        if (closed) { webSocket.abort(); return; }
+        // A listener is bound to exactly one approved connection. A second
+        // socket must not replace the session or supply a forged frame.
+        if (closed || socket != null) { webSocket.abort(); return; }
         socket = webSocket;
         webSocket.request(1);
     }
@@ -101,6 +103,12 @@ public final class BidiScreenshotHost implements WebSocket.Listener, AutoCloseab
     @Override
     public synchronized CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
         if (closed) return CompletableFuture.completedFuture(null);
+        if (webSocket != socket) {
+            // Ignore callbacks from a superseded/foreign WebSocket. Neither its
+            // frames nor its close/error callbacks own this host's authority.
+            if (webSocket != null) webSocket.abort();
+            return CompletableFuture.completedFuture(null);
+        }
         if ((long) fragments.length() + data.length() > CdpFrameJson.MAX_TEXT) {
             fail(new IOException("oversized BiDi WebSocket message"));
             return CompletableFuture.completedFuture(null);
@@ -155,12 +163,14 @@ public final class BidiScreenshotHost implements WebSocket.Listener, AutoCloseab
 
     @Override
     public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-        close();
+        if (webSocket == socket) close();
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void onError(WebSocket webSocket, Throwable error) { fail(error); }
+    public void onError(WebSocket webSocket, Throwable error) {
+        if (webSocket == socket && !closed) fail(error);
+    }
 
     private void fail(Throwable error) {
         if (failed.compareAndSet(false, true)) {

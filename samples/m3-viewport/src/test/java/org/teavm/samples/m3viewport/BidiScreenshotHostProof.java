@@ -29,6 +29,7 @@ public final class BidiScreenshotHostProof {
         completeViewportSnapshotsPreserveSafeFrameAuthorization();
         jpegCaptureAndCloseRequireExplicitAuthorization();
         unsolicitedAndStaleResponsesAreNotPresentations();
+        foreignSocketCannotReplaceAReadySession();
         mismatchAndMalformedRepliesFailClosed();
         System.out.println("M3_BIDI_SCREENSHOT_HOST_PASS assertions=" + assertions);
     }
@@ -147,6 +148,35 @@ public final class BidiScreenshotHostProof {
             yes(inbox.hasPending());
             eq(null, fail.get());
         }
+    }
+
+    private static void foreignSocketCannotReplaceAReadySession() throws Exception {
+        RemoteFrameInbox inbox = new RemoteFrameInbox();
+        FakeSocket owner = new FakeSocket();
+        FakeSocket foreign = new FakeSocket();
+        CountDownLatch arrived = new CountDownLatch(1);
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        try (BidiScreenshotHost host = new BidiScreenshotHost(inbox, 31, "ctx-foreign", 40, 20,
+                RemoteFrameInbox.Format.PNG, 100, arrived::countDown, failure::set)) {
+            host.onOpen(owner.socket);
+            host.onOpen(foreign.socket);
+            yes(foreign.aborted.get() == 1);
+            yes(host.capture());
+            awaitContains(owner.messages, "browsingContext.captureScreenshot");
+            eq(0, foreign.messages.size());
+            byte[] image = png(40, 20);
+            host.onText(foreign.socket, reply(1, image), true);
+            host.onClose(foreign.socket, 1000, "unrelated close");
+            host.onError(foreign.socket, new IOException("foreign socket failure"));
+            no(inbox.hasPending());
+            no(host.capture()); // The genuine request is still outstanding.
+            eq(null, failure.get());
+            host.onText(owner.socket, reply(1, image), true);
+            awaitCount(arrived, 0);
+            notNull(inbox.take(40, 20));
+            eq(null, failure.get());
+        }
+        yes(owner.aborted.get() > 0);
     }
 
     private static void mismatchAndMalformedRepliesFailClosed() throws Exception {
