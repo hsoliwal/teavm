@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+name: WebMCP TeaVM JSO browser candidate
+on:
+  pull_request:
+    paths:
+      - 'jso/apis/src/main/java/org/teavm/jso/webmcp/**'
+      - 'samples/webmcp/**'
+      - 'samples/settings.gradle.kts'
+      - '.github/workflows/webmcp-teavm.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  java11-overlay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Real TeaVM Java/JSO compilation and Checkstyle
+        run: ./gradlew --no-daemon --console=plain :jso:apis:compileJava :jso:apis:checkstyleMain
+
+  browser-bundle:
+    needs: java11-overlay
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Publish fork compiler dependencies for independent samples build
+        run: ./gradlew --no-daemon --console=plain publishToMavenLocal -x test
+      - name: Compile Java page fixture to JavaScript
+        working-directory: samples
+        run: ./gradlew --no-daemon --console=plain :webmcp:generateJavaScript :webmcp:war
+      - name: Verify nonempty generated JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          find samples/webmcp/build -type f -name '*.js' -print
+          find samples/webmcp/build -type f -name '*.js' | grep -q .
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install pinned polyfill and native-WebMCP-aware Playwright
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund @w3c/webmcp-polyfill@0.1.1 playwright@1.64.0
+      - name: Install pinned Playwright Chromium and headed browser dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Run existing compiled TeaVM Java to official-polyfill test
+        run: node --test samples/webmcp/src/test/browser/runtime.test.mjs
+      - name: Run native Chromium WebMCP through compiled TeaVM Java and Playwright agent
+        run: xvfb-run -a node --test samples/webmcp/src/test/browser/native.test.mjs
+      - name: Retain WAR for source-level failure investigation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: teavm-webmcp-native-qualification-war
+          path: samples/webmcp/build/libs/*.war
+          if-no-files-found: ignore
+          retention-days: 5
